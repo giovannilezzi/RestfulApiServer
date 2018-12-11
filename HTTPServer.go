@@ -33,6 +33,10 @@ type responseArrayDB struct {
 	Response []blogDB
 }
 
+type responseArrayImageDB struct {
+	Response []Image
+}
+
 type blog struct {
 	Id      int
 	Name    string
@@ -46,8 +50,10 @@ type blogDB struct {
 }
 
 type Image struct {
-	Name string
-	File []byte
+	Id       int
+	Name     string
+	File     []byte
+	MimeType string
 }
 
 func requestTime(w http.ResponseWriter, r *http.Request) {
@@ -76,52 +82,7 @@ func requestSay(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(b).Encode(resp)
 	fmt.Println(b)
 	fmt.Fprint(w, b)
-	/*
-		if u.Name != "" {
-			fmt.Fprintf(w, "Hello %s!", u.Name)
-		} else {
-			fmt.Fprintf(w, "Hello ... you.")
-		}*/
 }
-
-/*
-	body, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		panic(err)
-	}
-	log.Println(string(body))
-	var t myData
-	err = json.Unmarshal(body, &t)
-	if err != nil {
-		panic(err)
-	}
-	log.Println(t.Name)
-	if t.Name != "" {
-		fmt.Fprintf(w, "Hello %s!", t.Name)
-	} else {
-		fmt.Fprintf(w, "Hello ... you.")
-	}
-
-}
-*/
-
-/*
-func getBlog (w http.ResponseWriter, r *http.Request){
-	(w).Header().Set("Access-Control-Allow-Origin", "*")
-	var blogs = []blog{}
-	if r.Body == nil {
-		http.Error(w, "Please send a request body", 400)
-		return
-	}
-	blogs = append(blogs, blog{Id:1, Name:"Pippo", Surname:"Pluto"}, blog{Id:2, Name:"Pippo", Surname:"Pluto"})
-	fmt.Println(blogs)
-	resp := responseArray{Response: blogs}
-	b := new(bytes.Buffer)
-	json.NewEncoder(b).Encode(resp)
-	fmt.Println(b)
-	fmt.Fprint(w, b)
-}
-*/
 
 func getBlog(w http.ResponseWriter, r *http.Request) {
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
@@ -188,7 +149,7 @@ func saveBlog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Println(u.Id, u.Name, u.Surname)
-	insert, err := db.Query("INSERT INTO blog(titolo, corpo) VALUES ( $1, $2 )", u.Name, u.Surname)
+	insert, err := db.Query("INSERT INTO blog(titolo, corpo) VALUES ( $1, $2 ) LIMIT 3", u.Name, u.Surname)
 
 	// if there is an error inserting, handle it
 	if err != nil {
@@ -229,11 +190,12 @@ func saveImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err1 != nil {
+		fmt.Print("Sono Qui")
 		panic(err1)
 	}
 	fmt.Println(u)
-	fmt.Println("U", u.Name, u.File)
-	insert, err := db.Query("INSERT INTO mediarepo(namemedia, file) VALUES ($1, $2)", u.Name, u.File)
+	fmt.Println("U", u.Name, u.File, u.MimeType)
+	insert, err := db.Query("INSERT INTO mediarepo(namemedia, file, mimetype) VALUES ($1, $2, $3)", u.Name, u.File, u.MimeType)
 
 	// if there is an error inserting, handle it
 	if err != nil {
@@ -246,11 +208,10 @@ func saveImage(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(b).Encode(resp)
 	fmt.Println(b)
 	fmt.Fprint(w, b)
+}
 
-	/*fmt.Println(r.FormValue("image"))
-	fmt.Println(r.FormValue("objArr"))
-	fmt.Println(r.Form.Get("objArr"))
-
+func getImage(w http.ResponseWriter, r *http.Request) {
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
@@ -266,45 +227,23 @@ func saveImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println("Successfully connected!")
-	fmt.Println([]byte(r.FormValue("objArr")))
-	var byte = []byte(r.FormValue("objArr"))
-
-	//body, err := ioutil.ReadAll(bytes.NewReader(byte))
-	if err != nil {
-		panic(err)
+	results, err := db.Query("SELECT * FROM mediarepo")
+	var images = []Image{}
+	for results.Next() {
+		var tag Image
+		// for each row, scan the result into our tag composite object
+		err = results.Scan(&tag.Id, &tag.Name, &tag.File, &tag.MimeType)
+		if err != nil {
+			panic(err.Error()) // proper error handling instead of panic in your app
+		}
+		images = append(images, tag)
 	}
-	//var decoded []interface{}
-	//err = json.Unmarshal(body, &decoded)
-	//fmt.Print("Decoded", decoded)
-	var u Image
-
-	err1 := json.NewDecoder(bytes.NewReader(byte)).Decode(&u)
-	if r.Body == nil {
-		http.Error(w, "Please send a request body", 400)
-		return
-	}
-	if err1 != nil {
-		panic(err1)
-	}
-	fmt.Println(u)
-	fmt.Println("U", u.Name)
-	/*fmt.Println(u.Id, u.Name, u.File)*/
-	//body, err := ioutil.ReadAll(r.Body)
-	//log.Println(string(body))
-	/*insert, err := db.Query("INSERT INTO mediarepo(namemedia, file) VALUES ('ProvaApi', $1)",r.FormValue("image"))
-
-	// if there is an error inserting, handle it
-	if err != nil {
-		panic(err.Error())
-	}
-	// be careful deferring Queries if you are using transactions
-	defer insert.Close()
-	resp := response{Response: "ok"}
+	fmt.Println(images)
+	resp := responseArrayImageDB{Response: images}
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(resp)
 	fmt.Println(b)
-	//fmt.Fprint(w, b)*/
-
+	fmt.Fprint(w, b)
 }
 
 func main() {
@@ -313,6 +252,8 @@ func main() {
 	http.HandleFunc("/say", requestSay)
 	http.HandleFunc("/blog", saveBlog)
 	http.HandleFunc("/getBlog", getBlog)
+	http.HandleFunc("/getImage", getImage)
+
 	http.HandleFunc("/saveImage", saveImage)
 
 	err := http.ListenAndServe(":3001", nil)
