@@ -320,7 +320,7 @@ func getImageById(w http.ResponseWriter, r *http.Request) {
 	results, err := db.Query("SELECT * FROM mediarepo WHERE id = $1", id.Id)
 	var tag Image
 	for results.Next() {
-		err = results.Scan(&tag.Id, &tag.Name, &tag.File, &tag.MimeType)
+		err = results.Scan(&tag.Id, &tag.Name, &tag.File, &tag.MimeType, &tag.Channel)
 	}
 	if err != nil {
 		panic(err.Error()) // proper error handling instead of panic in your app
