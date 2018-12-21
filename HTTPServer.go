@@ -79,7 +79,7 @@ func getBlog(w http.ResponseWriter, r *http.Request) {
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
+		hostRem, portRem, userRem, passwordRem, dbnameRem)
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
@@ -97,7 +97,7 @@ func getBlog(w http.ResponseWriter, r *http.Request) {
 	for results.Next() {
 		var tag blogDB
 		// for each row, scan the result into our tag composite object
-		err = results.Scan(&tag.Titolo, &tag.Corpo, &tag.Id)
+		err = results.Scan(&tag.Id, &tag.Titolo, &tag.Corpo)
 		if err != nil {
 			panic(err.Error()) // proper error handling instead of panic in your app
 		}
@@ -112,10 +112,11 @@ func getBlog(w http.ResponseWriter, r *http.Request) {
 }
 
 func saveBlog(w http.ResponseWriter, r *http.Request) {
+
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
+		hostRem, portRem, userRem, passwordRem, dbnameRem)
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
@@ -139,7 +140,7 @@ func saveBlog(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err1.Error(), 400)
 		return
 	}
-	fmt.Println(u.Id, u.Name, u.Surname)
+	fmt.Println(u.Name, u.Surname)
 	insert, err := db.Query("INSERT INTO blog(titolo, corpo) VALUES ( $1, $2 ) LIMIT 3", u.Name, u.Surname)
 
 	// if there is an error inserting, handle it
@@ -185,7 +186,7 @@ func saveImage(w http.ResponseWriter, r *http.Request) {
 		panic(err1)
 	}
 	fmt.Println("U", u.Name, u.MimeType, u.Channel)
-	fmt.Println(db.Query("INSERT INTO mediarepo(namemedia, file, mimetype, channel) VALUES ($1, $2, $3, $4)", u.Name, u.File, u.MimeType, u.Channel))
+	//fmt.Println(db.Query("INSERT INTO mediarepo(namemedia, file, mimetype, channel) VALUES ($1, $2, $3, $4)", u.Name, u.File, u.MimeType, u.Channel))
 	insert, err := db.Query("INSERT INTO mediarepo(namemedia, file, mimetype, channel) VALUES ($1, $2, $3, $4)", u.Name, u.File, u.MimeType, u.Channel)
 
 	// if there is an error inserting, handle it
@@ -201,7 +202,7 @@ func saveImage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, b)
 }
 
-func getImage(w http.ResponseWriter, r *http.Request) {
+func getImageByChannel(w http.ResponseWriter, r *http.Request) {
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
@@ -336,9 +337,9 @@ func getImageById(w http.ResponseWriter, r *http.Request) {
 func main() {
 	fmt.Println("Starting server on port :3002")
 
-	http.HandleFunc("/blog", saveBlog)
+	http.HandleFunc("/saveBlog", saveBlog)
 	http.HandleFunc("/getBlog", getBlog)
-	http.HandleFunc("/getImage", getImage)
+	http.HandleFunc("/getImage", getImageByChannel)
 	//http.HandleFunc("/getAllImage", getAllImage)
 	http.HandleFunc("/saveImage", saveImage)
 	http.HandleFunc("/getImageById", getImageById)
