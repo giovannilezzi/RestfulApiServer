@@ -24,7 +24,7 @@ const (
 )
 
 type Id struct {
-	Id string
+	Id int
 }
 
 type Channel struct {
@@ -40,15 +40,15 @@ type ResponseArray struct {
 }
 
 type ResponseFile struct {
-	Response Image
+	Response File
 }
 
 type ResponseArrayDB struct {
 	Response []PostDB
 }
 
-type ResponseArrayImageDB struct {
-	Response []Image
+type ResponseArrayFileDB struct {
+	Response []File
 }
 
 type Post struct {
@@ -63,7 +63,7 @@ type PostDB struct {
 	Titolo string
 }
 
-type Image struct {
+type File struct {
 	Id       int
 	Name     string
 	File     []byte
@@ -198,7 +198,7 @@ func savePost(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, b)
 }
 
-func saveImage(w http.ResponseWriter, r *http.Request) {
+func saveFile(w http.ResponseWriter, r *http.Request) {
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
@@ -216,7 +216,7 @@ func saveImage(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Successfully connected!")
 
-	var u Image
+	var u File
 
 	err1 := json.NewDecoder(r.Body).Decode(&u)
 	if r.Body == nil {
@@ -244,7 +244,7 @@ func saveImage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, b)
 }
 
-func getImageByChannel(w http.ResponseWriter, r *http.Request) {
+func getFileByChannel(w http.ResponseWriter, r *http.Request) {
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
@@ -276,18 +276,18 @@ func getImageByChannel(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(channel)
 
 	results, err := db.Query("SELECT id, namemedia, mimetype, channel FROM mediarepo where channel = $1", channel.Channel)
-	var images = []Image{}
+	var files = []File{}
 	for results.Next() {
-		var tag Image
+		var tag File
 		// for each row, scan the result into our tag composite object
 		err = results.Scan(&tag.Id, &tag.Name, &tag.MimeType, &tag.Channel)
 		if err != nil {
 			panic(err.Error()) // proper error handling instead of panic in your app
 		}
-		images = append(images, tag)
+		files = append(files, tag)
 	}
-	fmt.Println(images)
-	resp := ResponseArrayImageDB{Response: images}
+	fmt.Println(files)
+	resp := ResponseArrayFileDB{Response: files}
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(resp)
 	fmt.Println(b)
@@ -331,7 +331,7 @@ func getAllImage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, b)
 }*/
 
-func getImageById(w http.ResponseWriter, r *http.Request) {
+func getFileById(w http.ResponseWriter, r *http.Request) {
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
@@ -361,7 +361,7 @@ func getImageById(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(id)
 	results, err := db.Query("SELECT * FROM mediarepo WHERE id = $1", id.Id)
-	var tag Image
+	var tag File
 	for results.Next() {
 		err = results.Scan(&tag.Id, &tag.Name, &tag.File, &tag.MimeType, &tag.Channel)
 	}
@@ -376,16 +376,63 @@ func getImageById(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, b)
 }
 
+func deleteFile(w http.ResponseWriter, r *http.Request) {
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	var u Post
+	if r.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	err1 := json.NewDecoder(r.Body).Decode(&u)
+	if err1 != nil {
+		http.Error(w, err1.Error(), 400)
+		return
+	}
+	fmt.Println(u.Id, u.Titolo, u.Corpo)
+	delete, err := db.Query("DELETE FROM mediarepo where id = $1", u.Id)
+	if err != nil {
+		panic(err.Error())
+		resp := Response{Response: "errore"}
+		b := new(bytes.Buffer)
+		json.NewEncoder(b).Encode(resp)
+		fmt.Println(b)
+		fmt.Fprint(w, b)
+	}
+	defer delete.Close()
+	resp := Response{Response: "ok"}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(resp)
+	fmt.Println(b)
+	fmt.Fprint(w, b)
+}
+
 func main() {
 	fmt.Println("Starting server on port :3002")
 
 	http.HandleFunc("/savePost", savePost)
 	http.HandleFunc("/getAllPosts", getAllPosts)
-	http.HandleFunc("/getImage", getImageByChannel)
+	http.HandleFunc("/getImage", getFileByChannel)
 	http.HandleFunc("/deletePost", deletePost)
 	//http.HandleFunc("/getAllImage", getAllImage)
-	http.HandleFunc("/saveImage", saveImage)
-	http.HandleFunc("/getImageById", getImageById)
+	http.HandleFunc("/saveFile", saveFile)
+	http.HandleFunc("/getFileById", getFileById)
+	http.HandleFunc("/deleteFile", deleteFile)
 
 	err := http.ListenAndServe(":3002", nil)
 	if err != nil {
