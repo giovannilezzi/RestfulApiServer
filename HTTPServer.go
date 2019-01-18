@@ -16,52 +16,48 @@ const (
 	password = "nbs2004"
 	dbname   = "postgres"
 
-	hostRem     = "172.18.50.67"
-	portRem     = 5432
-	userRem     = "postgres"
-	passwordRem = "postgres"
-	dbnameRem   = "blogNoOrm"
+	hostRemoto     = "172.18.50.67"
+	portRemoto     = 5432
+	userRemoto     = "postgres"
+	passwordRemoto = "postgres"
+	dbnameRemoto   = "blogNoOrm"
 )
 
-type myData struct {
-	Name string
-}
-
-type id struct {
+type Id struct {
 	Id string
 }
 
-type channel struct {
+type Channel struct {
 	Channel string
 }
 
-type response struct {
+type Response struct {
 	Response string
 }
 
-type responseArray struct {
-	Response []blog
+type ResponseArray struct {
+	Response []Post
 }
 
-type responseFile struct {
+type ResponseFile struct {
 	Response Image
 }
 
-type responseArrayDB struct {
-	Response []blogDB
+type ResponseArrayDB struct {
+	Response []PostDB
 }
 
-type responseArrayImageDB struct {
+type ResponseArrayImageDB struct {
 	Response []Image
 }
 
-type blog struct {
-	Id      int
-	Name    string
-	Surname string
+type Post struct {
+	Id     int
+	Titolo string
+	Corpo  string
 }
 
-type blogDB struct {
+type PostDB struct {
 	Id     int
 	Corpo  string
 	Titolo string
@@ -75,11 +71,11 @@ type Image struct {
 	Channel  string
 }
 
-func getBlog(w http.ResponseWriter, r *http.Request) {
+func getAllPosts(w http.ResponseWriter, r *http.Request) {
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
-		hostRem, portRem, userRem, passwordRem, dbnameRem)
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
@@ -93,30 +89,29 @@ func getBlog(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Successfully connected!")
 	results, err := db.Query("SELECT * FROM blog")
-	var blogsDB = []blogDB{}
+	var postArrayDB = []PostDB{}
 	for results.Next() {
-		var tag blogDB
+		var tag PostDB
 		// for each row, scan the result into our tag composite object
 		err = results.Scan(&tag.Id, &tag.Titolo, &tag.Corpo)
 		if err != nil {
 			panic(err.Error()) // proper error handling instead of panic in your app
 		}
-		blogsDB = append(blogsDB, tag)
+		postArrayDB = append(postArrayDB, tag)
 	}
-	fmt.Println(blogsDB)
-	resp := responseArrayDB{Response: blogsDB}
+	fmt.Println(postArrayDB)
+	resp := ResponseArrayDB{Response: postArrayDB}
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(resp)
 	fmt.Println(b)
 	fmt.Fprint(w, b)
 }
 
-func saveBlog(w http.ResponseWriter, r *http.Request) {
-
+func deletePost(w http.ResponseWriter, r *http.Request) {
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
-		hostRem, portRem, userRem, passwordRem, dbnameRem)
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
@@ -130,7 +125,7 @@ func saveBlog(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Successfully connected!")
 
-	var u blog
+	var u Post
 	if r.Body == nil {
 		http.Error(w, "Please send a request body", 400)
 		return
@@ -140,8 +135,55 @@ func saveBlog(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err1.Error(), 400)
 		return
 	}
-	fmt.Println(u.Name, u.Surname)
-	insert, err := db.Query("INSERT INTO blog(titolo, corpo) VALUES ( $1, $2 ) LIMIT 3", u.Name, u.Surname)
+	fmt.Println(u.Id, u.Titolo, u.Corpo)
+	delete, err := db.Query("DELETE FROM blog where id = $1", u.Id)
+	if err != nil {
+		panic(err.Error())
+		resp := Response{Response: "errore"}
+		b := new(bytes.Buffer)
+		json.NewEncoder(b).Encode(resp)
+		fmt.Println(b)
+		fmt.Fprint(w, b)
+	}
+	defer delete.Close()
+	resp := Response{Response: "ok"}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(resp)
+	fmt.Println(b)
+	fmt.Fprint(w, b)
+}
+
+func savePost(w http.ResponseWriter, r *http.Request) {
+
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	var u Post
+	if r.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	err1 := json.NewDecoder(r.Body).Decode(&u)
+	if err1 != nil {
+		http.Error(w, err1.Error(), 400)
+		return
+	}
+	fmt.Println(u.Titolo, u.Corpo)
+	insert, err := db.Query("INSERT INTO blog(titolo, corpo) VALUES ( $1, $2 ) LIMIT 3", u.Titolo, u.Corpo)
 
 	// if there is an error inserting, handle it
 	if err != nil {
@@ -149,7 +191,7 @@ func saveBlog(w http.ResponseWriter, r *http.Request) {
 	}
 	// be careful deferring Queries if you are using transactions
 	defer insert.Close()
-	resp := response{Response: "ok"}
+	resp := Response{Response: "ok"}
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(resp)
 	fmt.Println(b)
@@ -160,7 +202,7 @@ func saveImage(w http.ResponseWriter, r *http.Request) {
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
-		hostRem, portRem, userRem, passwordRem, dbnameRem)
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
@@ -195,7 +237,7 @@ func saveImage(w http.ResponseWriter, r *http.Request) {
 	}
 	// be careful deferring Queries if you are using transactions
 	defer insert.Close()
-	resp := response{Response: "ok"}
+	resp := Response{Response: "ok"}
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(resp)
 	fmt.Println(b)
@@ -206,7 +248,7 @@ func getImageByChannel(w http.ResponseWriter, r *http.Request) {
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
-		hostRem, portRem, userRem, passwordRem, dbnameRem)
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
@@ -220,7 +262,7 @@ func getImageByChannel(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Successfully connected!")
 
-	var channel channel
+	var channel Channel
 	if r.Body == nil {
 		http.Error(w, "Please send a request body", 400)
 		return
@@ -245,7 +287,7 @@ func getImageByChannel(w http.ResponseWriter, r *http.Request) {
 		images = append(images, tag)
 	}
 	fmt.Println(images)
-	resp := responseArrayImageDB{Response: images}
+	resp := ResponseArrayImageDB{Response: images}
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(resp)
 	fmt.Println(b)
@@ -257,7 +299,7 @@ func getAllImage(w http.ResponseWriter, r *http.Request) {
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
-		hostRem, portRem, userRem, passwordRem, dbnameRem)
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
@@ -293,7 +335,7 @@ func getImageById(w http.ResponseWriter, r *http.Request) {
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
-		hostRem, portRem, userRem, passwordRem, dbnameRem)
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
@@ -306,7 +348,7 @@ func getImageById(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("Successfully connected!")
 
-	var id id
+	var id Id
 	if r.Body == nil {
 		http.Error(w, "Please send a request body", 400)
 		return
@@ -327,7 +369,7 @@ func getImageById(w http.ResponseWriter, r *http.Request) {
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
 	fmt.Println(tag)
-	resp := responseFile{Response: tag}
+	resp := ResponseFile{Response: tag}
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(resp)
 	fmt.Println(b)
@@ -337,9 +379,10 @@ func getImageById(w http.ResponseWriter, r *http.Request) {
 func main() {
 	fmt.Println("Starting server on port :3002")
 
-	http.HandleFunc("/saveBlog", saveBlog)
-	http.HandleFunc("/getBlog", getBlog)
+	http.HandleFunc("/savePost", savePost)
+	http.HandleFunc("/getAllPosts", getAllPosts)
 	http.HandleFunc("/getImage", getImageByChannel)
+	http.HandleFunc("/deletePost", deletePost)
 	//http.HandleFunc("/getAllImage", getAllImage)
 	http.HandleFunc("/saveImage", saveImage)
 	http.HandleFunc("/getImageById", getImageById)
