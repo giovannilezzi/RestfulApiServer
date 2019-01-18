@@ -71,6 +71,11 @@ type File struct {
 	Channel  string
 }
 
+type UpdateFile struct {
+	Id   int
+	Name string
+}
+
 func getAllPosts(w http.ResponseWriter, r *http.Request) {
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
@@ -394,7 +399,7 @@ func deleteFile(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Successfully connected!")
 
-	var u Post
+	var u Id
 	if r.Body == nil {
 		http.Error(w, "Please send a request body", 400)
 		return
@@ -404,7 +409,7 @@ func deleteFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err1.Error(), 400)
 		return
 	}
-	fmt.Println(u.Id, u.Titolo, u.Corpo)
+	fmt.Println(u.Id)
 	delete, err := db.Query("DELETE FROM mediarepo where id = $1", u.Id)
 	if err != nil {
 		panic(err.Error())
@@ -415,6 +420,52 @@ func deleteFile(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, b)
 	}
 	defer delete.Close()
+	resp := Response{Response: "ok"}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(resp)
+	fmt.Println(b)
+	fmt.Fprint(w, b)
+}
+
+func editFile(w http.ResponseWriter, r *http.Request) {
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	var u UpdateFile
+	if r.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	err1 := json.NewDecoder(r.Body).Decode(&u)
+	if err1 != nil {
+		http.Error(w, err1.Error(), 400)
+		return
+	}
+	fmt.Println(u.Id, u.Name)
+	update, err := db.Query("UPDATE mediarepo SET namemedia=$1 WHERE id = $2", u.Name, u.Id)
+	if err != nil {
+		panic(err.Error())
+		resp := Response{Response: "errore"}
+		b := new(bytes.Buffer)
+		json.NewEncoder(b).Encode(resp)
+		fmt.Println(b)
+		fmt.Fprint(w, b)
+	}
+	defer update.Close()
 	resp := Response{Response: "ok"}
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(resp)
@@ -433,6 +484,7 @@ func main() {
 	http.HandleFunc("/saveFile", saveFile)
 	http.HandleFunc("/getFileById", getFileById)
 	http.HandleFunc("/deleteFile", deleteFile)
+	http.HandleFunc("/editFile", editFile)
 
 	err := http.ListenAndServe(":3002", nil)
 	if err != nil {
