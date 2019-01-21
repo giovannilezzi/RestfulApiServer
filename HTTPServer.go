@@ -31,6 +31,11 @@ type Channel struct {
 	Channel string
 }
 
+type Search struct {
+	Name    string
+	Channel string
+}
+
 type Response struct {
 	Response string
 }
@@ -136,7 +141,7 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Successfully connected!")
 
-	var u Post
+	var u Id
 	if r.Body == nil {
 		http.Error(w, "Please send a request body", 400)
 		return
@@ -146,7 +151,7 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err1.Error(), 400)
 		return
 	}
-	fmt.Println(u.Id, u.Titolo, u.Corpo)
+	fmt.Println(u.Id)
 	delete, err := db.Query("DELETE FROM blog where id = $1", u.Id)
 	if err != nil {
 		panic(err.Error())
@@ -525,6 +530,58 @@ func editFile(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, b)
 }
 
+func searchFile(w http.ResponseWriter, r *http.Request) {
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	var search Search
+	if r.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+
+	err1 := json.NewDecoder(r.Body).Decode(&search)
+	if err1 != nil {
+		fmt.Print("Sono Qui")
+		panic(err1)
+	}
+	fmt.Println(search)
+
+	results, err := db.Query("SELECT id, namemedia, mimetype, channel FROM mediarepo where namemedia LIKE '%' || $1 || '%' AND channel=$2", search.Name, search.Channel)
+	var files = []File{}
+	for results.Next() {
+		var tag File
+		// for each row, scan the result into our tag composite object
+		fmt.Print("Sono Qui")
+
+		err = results.Scan(&tag.Id, &tag.Name, &tag.MimeType, &tag.Channel)
+		if err != nil {
+			panic(err.Error()) // proper error handling instead of panic in your app
+		}
+		files = append(files, tag)
+	}
+	fmt.Println(files)
+	resp := ResponseArrayFileDB{Response: files}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(resp)
+	fmt.Println(b)
+	fmt.Fprint(w, b)
+}
+
 func main() {
 	fmt.Println("Starting server on port :3002")
 
@@ -538,6 +595,7 @@ func main() {
 	http.HandleFunc("/deleteFile", deleteFile)
 	http.HandleFunc("/editFile", editFile)
 	http.HandleFunc("/editPost", editPost)
+	http.HandleFunc("/searchFile", searchFile)
 
 	err := http.ListenAndServe(":3002", nil)
 	if err != nil {
