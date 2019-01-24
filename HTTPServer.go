@@ -87,6 +87,13 @@ type UpdatePost struct {
 	Corpo  string
 }
 
+type EventCalendar struct {
+	Canale    string
+	Data      string
+	TypeEevnt string
+	Event     string
+}
+
 func getAllPosts(w http.ResponseWriter, r *http.Request) {
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
@@ -582,6 +589,53 @@ func searchFile(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, b)
 }
 
+/*API per il calendario*/
+func saveCalendarEvent(w http.ResponseWriter, r *http.Request) {
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	var ev EventCalendar
+
+	err1 := json.NewDecoder(r.Body).Decode(&ev)
+	if r.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	if err1 != nil {
+		fmt.Print("Sono Qui")
+		panic(err1)
+	}
+	fmt.Println("U", ev.Canale, ev.Data, ev.TypeEevnt, ev.Event)
+
+	insert, err := db.Query("INSERT INTO calendario(canale, data, tipo, descrizione) VALUES ($1, $2, $3, $4)", ev.Canale, ev.Data, ev.TypeEevnt, ev.Event)
+
+	// if there is an error inserting, handle it
+	if err != nil {
+		panic(err.Error())
+	}
+	// be careful deferring Queries if you are using transactions
+	defer insert.Close()
+	resp := Response{Response: "ok"}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(resp)
+	fmt.Println(b)
+	fmt.Fprint(w, b)
+}
+
 func main() {
 	fmt.Println("Starting server on port :3002")
 
@@ -596,6 +650,7 @@ func main() {
 	http.HandleFunc("/editFile", editFile)
 	http.HandleFunc("/editPost", editPost)
 	http.HandleFunc("/searchFile", searchFile)
+	http.HandleFunc("/saveCalendarEvent", saveCalendarEvent)
 
 	err := http.ListenAndServe(":3002", nil)
 	if err != nil {
