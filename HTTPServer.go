@@ -94,12 +94,21 @@ type EventCalendar struct {
 	Event     string
 }
 
-type ResponseEventeCalendar struct {
-	Response EventCalendar
+type DataInizioFineEventCalendar struct {
+	DataInizio string
+	DataFine   string
 }
 
 type ResponseArrayEventDB struct {
 	Response []EventCalendar
+}
+
+type DataEventCalendar struct {
+	Data string
+}
+
+type ResponseArrayDataEventCalendar struct {
+	Response []DataEventCalendar
 }
 
 func getAllPosts(w http.ResponseWriter, r *http.Request) {
@@ -698,6 +707,60 @@ func getAEventsDay(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func getAllAEvents(w http.ResponseWriter, r *http.Request) {
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	var dataInizioFine DataInizioFineEventCalendar
+
+	err1 := json.NewDecoder(r.Body).Decode(&dataInizioFine)
+	if r.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	if err1 != nil {
+		fmt.Print("Sono Qui")
+		panic(err1)
+	}
+	fmt.Println("U", dataInizioFine.DataInizio, dataInizioFine.DataFine)
+
+	results, err := db.Query("SELECT data FROM calendario WHERE data >= $1 AND data <= $2", dataInizioFine.DataInizio, dataInizioFine.DataFine)
+
+	var events = []DataEventCalendar{}
+
+	for results.Next() {
+		var tag DataEventCalendar
+
+		err = results.Scan(&tag.Data)
+		events = append(events, tag)
+
+	}
+	if err != nil {
+		panic(err.Error()) // proper error handling instead of panic in your app
+	}
+	fmt.Println(events)
+	resp := ResponseArrayDataEventCalendar{Response: events}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(resp)
+	fmt.Println(b)
+	fmt.Fprint(w, b)
+
+}
+
 func main() {
 	fmt.Println("Starting server on port :3002")
 
@@ -714,6 +777,7 @@ func main() {
 	http.HandleFunc("/searchFile", searchFile)
 	http.HandleFunc("/saveCalendarEvent", saveCalendarEvent)
 	http.HandleFunc("/getAEventsDay", getAEventsDay)
+	http.HandleFunc("/getAllAEvents", getAllAEvents)
 
 	err := http.ListenAndServe(":3002", nil)
 	if err != nil {

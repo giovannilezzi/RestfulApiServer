@@ -3,6 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="4f29da20-33da-4397-b231-64cbd4b39906" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HTTPServer.go" beforeDir="false" afterPath="$PROJECT_DIR$/HTTPServer.go" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -74,41 +75,13 @@
     </expand>
     <select />
   </component>
-  <component name="FUSProjectUsageTrigger">
-    <session id="-1865667485">
-      <usages-collector id="statistics.file.extensions.edit">
-        <counts>
-          <entry key="go" value="1027" />
-          <entry key="txt" value="335" />
-        </counts>
-      </usages-collector>
-      <usages-collector id="statistics.file.types.edit">
-        <counts>
-          <entry key="Go" value="1027" />
-          <entry key="PLAIN_TEXT" value="335" />
-        </counts>
-      </usages-collector>
-      <usages-collector id="statistics.lifecycle.project">
-        <counts>
-          <entry key="project.closed" value="6" />
-          <entry key="project.open.time.107" value="1" />
-          <entry key="project.open.time.34" value="1" />
-          <entry key="project.open.time.43" value="1" />
-          <entry key="project.open.time.46" value="1" />
-          <entry key="project.open.time.53" value="1" />
-          <entry key="project.open.time.61" value="1" />
-          <entry key="project.opened" value="6" />
-        </counts>
-      </usages-collector>
-    </session>
-  </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/HTTPServer.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="40">
-              <caret line="692" column="36" selection-start-line="692" selection-start-column="36" selection-end-line="692" selection-end-column="36" />
+            <state relative-caret-position="183">
+              <caret line="727" column="23" selection-start-line="727" selection-start-column="23" selection-end-line="727" selection-end-column="23" />
             </state>
           </provider>
         </entry>
@@ -141,17 +114,11 @@
       </list>
     </option>
   </component>
-  <component name="JsBuildToolGruntFileManager" detection-done="true" sorting="DEFINITION_ORDER" />
-  <component name="JsBuildToolPackageJson" detection-done="true" sorting="DEFINITION_ORDER" />
-  <component name="JsGulpfileManager">
-    <detection-done>true</detection-done>
-    <sorting>DEFINITION_ORDER</sorting>
-  </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="-8" />
-    <option name="y" value="-8" />
-    <option name="width" value="1380" />
-    <option name="height" value="744" />
+    <option name="x" value="-177" />
+    <option name="y" value="91" />
+    <option name="width" value="1936" />
+    <option name="height" value="1056" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -216,8 +183,9 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.27771854" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.141258" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -230,7 +198,7 @@
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Database Changes" order="8" />
       <window_info anchor="bottom" id="Version Control" order="9" />
-      <window_info active="true" anchor="bottom" id="Terminal" order="10" sideWeight="0.49946696" visible="true" weight="0.7164502" />
+      <window_info active="true" anchor="bottom" id="Terminal" order="10" sideWeight="0.49946696" visible="true" weight="0.18309858" />
       <window_info anchor="bottom" id="Event Log" order="11" sideWeight="0.50053304" side_tool="true" weight="0.28277355" />
       <window_info anchor="bottom" id="Database Console" order="12" weight="0.32936078" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -241,9 +209,6 @@
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="1" />
-  </component>
-  <component name="VcsContentAnnotationSettings">
-    <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="." />
@@ -259,33 +224,27 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/HTTPServer.go</url>
-          <line>331</line>
+          <line>340</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/HTTPServer.go</url>
-          <line>309</line>
+          <line>318</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/../../../net/http/server.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="429">
-          <caret line="1851" column="25" lean-forward="true" selection-start-line="1851" selection-start-column="25" selection-end-line="1851" selection-end-column="25" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/../../../net/http/server.go" />
     <entry file="file://$APPLICATION_CONFIG_DIR$/consoles/db/31941887-ca91-49e1-801f-16068f7db38e/console.sql" />
     <entry file="das://31941887-ca91-49e1-801f-16068f7db38e/database/postgres/schema/public/table/blog" />
     <entry file="das://31941887-ca91-49e1-801f-16068f7db38e/database/postgres/schema/public/table/mediarepo" />
     <entry file="file://$USER_HOME$/Desktop/Condivisa/mediaRepoPlugin/plugin.go" />
     <entry file="file://$PROJECT_DIR$/HTTPServer.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="40">
-          <caret line="692" column="36" selection-start-line="692" selection-start-column="36" selection-end-line="692" selection-end-column="36" />
+        <state relative-caret-position="183">
+          <caret line="727" column="23" selection-start-line="727" selection-start-column="23" selection-end-line="727" selection-end-column="23" />
         </state>
       </provider>
     </entry>
