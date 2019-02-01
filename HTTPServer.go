@@ -87,7 +87,14 @@ type UpdatePost struct {
 	Corpo  string
 }
 
+type UpdateEventCalendar struct {
+	Id        int
+	TypeEevnt string
+	Event     string
+}
+
 type EventCalendar struct {
+	Id        int
 	Canale    string
 	Data      string
 	TypeEevnt string
@@ -104,6 +111,7 @@ type ResponseArrayEventDB struct {
 }
 
 type DataEventCalendar struct {
+	Id   int
 	Data string
 }
 
@@ -684,14 +692,14 @@ func getAEventsDay(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("U", ev.Canale, ev.Data, ev.TypeEevnt, ev.Event)
 
-	results, err := db.Query("SELECT canale, data, tipo, descrizione FROM calendario WHERE data =$1", ev.Data)
+	results, err := db.Query("SELECT id, canale, data, tipo, descrizione FROM calendario WHERE data =$1", ev.Data)
 
 	var events = []EventCalendar{}
 
 	for results.Next() {
 		var tag EventCalendar
 
-		err = results.Scan(&tag.Canale, &tag.Data, &tag.TypeEevnt, &tag.Event)
+		err = results.Scan(&tag.Id, &tag.Canale, &tag.Data, &tag.TypeEevnt, &tag.Event)
 		events = append(events, tag)
 
 	}
@@ -738,14 +746,14 @@ func getAllAEvents(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("U", dataInizioFine.DataInizio, dataInizioFine.DataFine)
 
-	results, err := db.Query("SELECT data FROM calendario WHERE data >= $1 AND data <= $2", dataInizioFine.DataInizio, dataInizioFine.DataFine)
+	results, err := db.Query("SELECT id, data FROM calendario WHERE data >= $1 AND data <= $2", dataInizioFine.DataInizio, dataInizioFine.DataFine)
 
 	var events = []DataEventCalendar{}
 
 	for results.Next() {
 		var tag DataEventCalendar
 
-		err = results.Scan(&tag.Data)
+		err = results.Scan(&tag.Id, &tag.Data)
 		events = append(events, tag)
 
 	}
@@ -759,6 +767,98 @@ func getAllAEvents(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(b)
 	fmt.Fprint(w, b)
 
+}
+
+func deleteEvent(w http.ResponseWriter, r *http.Request) {
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	var u Id
+	if r.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	err1 := json.NewDecoder(r.Body).Decode(&u)
+	if err1 != nil {
+		http.Error(w, err1.Error(), 400)
+		return
+	}
+	fmt.Println(u.Id)
+	delete, err := db.Query("DELETE FROM calendario where id = $1", u.Id)
+	if err != nil {
+		panic(err.Error())
+		resp := Response{Response: "errore"}
+		b := new(bytes.Buffer)
+		json.NewEncoder(b).Encode(resp)
+		fmt.Println(b)
+		fmt.Fprint(w, b)
+	}
+	defer delete.Close()
+	resp := Response{Response: "ok"}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(resp)
+	fmt.Println(b)
+	fmt.Fprint(w, b)
+}
+
+func editEvent(w http.ResponseWriter, r *http.Request) {
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	var u UpdateEventCalendar
+	if r.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	err1 := json.NewDecoder(r.Body).Decode(&u)
+	if err1 != nil {
+		http.Error(w, err1.Error(), 400)
+		return
+	}
+	fmt.Println(u.Id, u.TypeEevnt, u.Event)
+	update, err := db.Query("UPDATE calendario SET tipo=$1, descrizione=$2 WHERE id = $3", u.TypeEevnt, u.Event, u.Id)
+	if err != nil {
+		panic(err.Error())
+		resp := Response{Response: "errore"}
+		b := new(bytes.Buffer)
+		json.NewEncoder(b).Encode(resp)
+		fmt.Println(b)
+		fmt.Fprint(w, b)
+	}
+	defer update.Close()
+	resp := Response{Response: "ok"}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(resp)
+	fmt.Println(b)
+	fmt.Fprint(w, b)
 }
 
 func main() {
@@ -778,6 +878,8 @@ func main() {
 	http.HandleFunc("/saveCalendarEvent", saveCalendarEvent)
 	http.HandleFunc("/getAEventsDay", getAEventsDay)
 	http.HandleFunc("/getAllAEvents", getAllAEvents)
+	http.HandleFunc("/deleteEvent", deleteEvent)
+	http.HandleFunc("/editEvent", editEvent)
 
 	err := http.ListenAndServe(":3002", nil)
 	if err != nil {
