@@ -115,6 +115,23 @@ type DataEventCalendar struct {
 	Data string
 }
 
+type Questions struct {
+	Id              int
+	Tipo            string
+	Descrizione     string
+	Risposta_a      string
+	Risposta_b      string
+	Risposta_c      string
+	Risposta_d      string
+	Risposta_esatta string
+	Titolo          string
+}
+
+type Survey struct {
+	Titolo      string
+	Descrizione string
+}
+
 type ResponseArrayDataEventCalendar struct {
 	Response []DataEventCalendar
 }
@@ -861,6 +878,155 @@ func editEvent(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, b)
 }
 
+/*API per il Self Assessment*/
+func saveQuestions(w http.ResponseWriter, r *http.Request) {
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	var qu Questions
+
+	err1 := json.NewDecoder(r.Body).Decode(&qu)
+	if r.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	if err1 != nil {
+		fmt.Print("Sono Qui")
+		panic(err1)
+	}
+	fmt.Println("U", qu.Id, qu.Tipo, qu.Descrizione, qu.Risposta_a, qu.Risposta_b, qu.Risposta_c, qu.Risposta_d, qu.Risposta_esatta)
+
+	insert, err := db.Query("INSERT INTO domande(tipo, descrizione, risposta_a, risposta_b, risposta_c, risposta_d ,risposta_esatta, titolo ) VALUES ($1, $2,$3,$4,$5,$6,$7, $8)", qu.Tipo, qu.Descrizione, qu.Risposta_a, qu.Risposta_b, qu.Risposta_c, qu.Risposta_d, qu.Risposta_esatta, qu.Titolo)
+
+	// if there is an error inserting, handle it
+	if err != nil {
+		panic(err.Error())
+	}
+	// be careful deferring Queries if you are using transactions
+	defer insert.Close()
+
+	resp := Response{Response: "ok"}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(resp)
+	fmt.Println(b)
+	fmt.Fprint(w, b)
+}
+
+func saveSurvey(w http.ResponseWriter, r *http.Request) {
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	var su Survey
+
+	err1 := json.NewDecoder(r.Body).Decode(&su)
+	if r.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	if err1 != nil {
+		fmt.Print("Sono Qui")
+		panic(err1)
+	}
+	fmt.Println("U", su.Titolo, su.Descrizione)
+
+	insert, err := db.Query("INSERT INTO questionari(titolo, descrizione) VALUES ($1, $2)", su.Titolo, su.Descrizione)
+
+	// if there is an error inserting, handle it
+	if err != nil {
+		panic(err.Error())
+	}
+	// be careful deferring Queries if you are using transactions
+	defer insert.Close()
+
+	resp := Response{Response: "ok"}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(resp)
+	fmt.Println(b)
+	fmt.Fprint(w, b)
+}
+
+func getAllQuestions(w http.ResponseWriter, r *http.Request) {
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	var dataInizioFine DataInizioFineEventCalendar
+
+	err1 := json.NewDecoder(r.Body).Decode(&dataInizioFine)
+	if r.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	if err1 != nil {
+		fmt.Print("Sono Qui")
+		panic(err1)
+	}
+	fmt.Println("U", dataInizioFine.DataInizio, dataInizioFine.DataFine)
+
+	results, err := db.Query("SELECT id, data FROM calendario WHERE data >= $1 AND data <= $2", dataInizioFine.DataInizio, dataInizioFine.DataFine)
+
+	var events = []DataEventCalendar{}
+
+	for results.Next() {
+		var tag DataEventCalendar
+
+		err = results.Scan(&tag.Id, &tag.Data)
+		events = append(events, tag)
+
+	}
+	if err != nil {
+		panic(err.Error()) // proper error handling instead of panic in your app
+	}
+	fmt.Println(events)
+	resp := ResponseArrayDataEventCalendar{Response: events}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(resp)
+	fmt.Println(b)
+	fmt.Fprint(w, b)
+
+}
+
 func main() {
 	fmt.Println("Starting server on port :3002")
 
@@ -880,6 +1046,9 @@ func main() {
 	http.HandleFunc("/getAllAEvents", getAllAEvents)
 	http.HandleFunc("/deleteEvent", deleteEvent)
 	http.HandleFunc("/editEvent", editEvent)
+	http.HandleFunc("/saveQuestions", saveQuestions)
+	http.HandleFunc("/saveSurvey", saveSurvey)
+	// getAllQuestions
 
 	err := http.ListenAndServe(":3002", nil)
 	if err != nil {
