@@ -27,6 +27,10 @@ type Id struct {
 	Id int
 }
 
+type Titolo struct {
+	Titolo string
+}
+
 type Channel struct {
 	Channel string
 }
@@ -134,6 +138,10 @@ type Survey struct {
 
 type ResponseArrayDataEventCalendar struct {
 	Response []DataEventCalendar
+}
+
+type ResponseArraySurveys struct {
+	Response []Survey
 }
 
 func getAllPosts(w http.ResponseWriter, r *http.Request) {
@@ -973,7 +981,7 @@ func saveSurvey(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, b)
 }
 
-func getAllQuestions(w http.ResponseWriter, r *http.Request) {
+func getAllSurveys(w http.ResponseWriter, r *http.Request) {
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
@@ -991,40 +999,73 @@ func getAllQuestions(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Successfully connected!")
 
-	var dataInizioFine DataInizioFineEventCalendar
+	results, err := db.Query("SELECT titolo, descrizione FROM questionari ")
 
-	err1 := json.NewDecoder(r.Body).Decode(&dataInizioFine)
-	if r.Body == nil {
-		http.Error(w, "Please send a request body", 400)
-		return
-	}
-	if err1 != nil {
-		fmt.Print("Sono Qui")
-		panic(err1)
-	}
-	fmt.Println("U", dataInizioFine.DataInizio, dataInizioFine.DataFine)
-
-	results, err := db.Query("SELECT id, data FROM calendario WHERE data >= $1 AND data <= $2", dataInizioFine.DataInizio, dataInizioFine.DataFine)
-
-	var events = []DataEventCalendar{}
+	var surveys = []Survey{}
 
 	for results.Next() {
-		var tag DataEventCalendar
+		var tag Survey
 
-		err = results.Scan(&tag.Id, &tag.Data)
-		events = append(events, tag)
+		err = results.Scan(&tag.Titolo, &tag.Descrizione)
+		surveys = append(surveys, tag)
 
 	}
 	if err != nil {
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
-	fmt.Println(events)
-	resp := ResponseArrayDataEventCalendar{Response: events}
+	fmt.Println(surveys)
+	resp := ResponseArraySurveys{Response: surveys}
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(resp)
 	fmt.Println(b)
 	fmt.Fprint(w, b)
 
+}
+
+func deleteSurvey(w http.ResponseWriter, r *http.Request) {
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	var t Titolo
+	if r.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	err1 := json.NewDecoder(r.Body).Decode(&t)
+	if err1 != nil {
+		http.Error(w, err1.Error(), 400)
+		return
+	}
+	fmt.Println(t.Titolo)
+	delete, err := db.Query("DELETE FROM questionari where titolo = $1", t.Titolo)
+	if err != nil {
+		panic(err.Error())
+		resp := Response{Response: "errore"}
+		b := new(bytes.Buffer)
+		json.NewEncoder(b).Encode(resp)
+		fmt.Println(b)
+		fmt.Fprint(w, b)
+	}
+	defer delete.Close()
+	resp := Response{Response: "ok"}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(resp)
+	fmt.Println(b)
+	fmt.Fprint(w, b)
 }
 
 func main() {
@@ -1048,7 +1089,8 @@ func main() {
 	http.HandleFunc("/editEvent", editEvent)
 	http.HandleFunc("/saveQuestions", saveQuestions)
 	http.HandleFunc("/saveSurvey", saveSurvey)
-	// getAllQuestions
+	http.HandleFunc("/getAllSurveys", getAllSurveys)
+	http.HandleFunc("/deleteSurvey", deleteSurvey)
 
 	err := http.ListenAndServe(":3002", nil)
 	if err != nil {
