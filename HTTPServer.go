@@ -44,6 +44,10 @@ type Response struct {
 	Response string
 }
 
+type CheckResponse struct {
+	Response bool
+}
+
 type ResponseArray struct {
 	Response []Post
 }
@@ -131,9 +135,22 @@ type Questions struct {
 	Titolo          string
 }
 
+type ResponseArrayQuestions struct {
+	Response []Questions
+}
+
+type RispostaUtente struct {
+	Id       int
+	Risposta string
+}
+
 type Survey struct {
 	Titolo      string
 	Descrizione string
+}
+
+type RispostaEsatta struct {
+	Risposta string
 }
 
 type ResponseArrayDataEventCalendar struct {
@@ -1068,6 +1085,122 @@ func deleteSurvey(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, b)
 }
 
+func getSurvey(w http.ResponseWriter, r *http.Request) {
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	var qu Questions
+
+	err1 := json.NewDecoder(r.Body).Decode(&qu)
+	if r.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	if err1 != nil {
+		fmt.Print("Sono Qui")
+		panic(err1)
+	}
+	fmt.Println("U", qu.Titolo, qu.Descrizione)
+
+	results, err := db.Query("SELECT * FROM domande WHERE titolo =$1", qu.Titolo)
+
+	var questions = []Questions{}
+
+	for results.Next() {
+		var tag Questions
+
+		err = results.Scan(&tag.Id, &tag.Tipo, &tag.Descrizione, &tag.Risposta_a, &tag.Risposta_b, &tag.Risposta_c, &tag.Risposta_d, &tag.Risposta_esatta, &tag.Titolo)
+		questions = append(questions, tag)
+
+	}
+	if err != nil {
+		panic(err.Error()) // proper error handling instead of panic in your app
+	}
+	fmt.Println(questions)
+	resp := ResponseArrayQuestions{Response: questions}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(resp)
+	fmt.Println(b)
+	fmt.Fprint(w, b)
+
+}
+
+func checkResponse(w http.ResponseWriter, r *http.Request) {
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	var ri RispostaUtente
+
+	err1 := json.NewDecoder(r.Body).Decode(&ri)
+	if r.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	if err1 != nil {
+		fmt.Print("Sono Qui")
+		panic(err1)
+	}
+	fmt.Println("U", ri.Id, ri.Risposta)
+
+	results, err := db.Query("SELECT risposta_esatta FROM domande WHERE id=$1", ri.Id)
+
+	var rispostaEsatta string
+
+	for results.Next() {
+		err = results.Scan(&rispostaEsatta)
+	}
+
+	var correzzione bool = false
+	if ri.Risposta == rispostaEsatta {
+		correzzione = true
+	} else {
+		correzzione = false
+	}
+
+	if err != nil {
+		panic(err.Error())
+		resp := Response{Response: "errore"}
+		b := new(bytes.Buffer)
+		json.NewEncoder(b).Encode(resp)
+		fmt.Println(b)
+		fmt.Fprint(w, b)
+	}
+	defer results.Close()
+	resp := CheckResponse{Response: correzzione}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(resp)
+	fmt.Println(b)
+	fmt.Fprint(w, b)
+}
+
 func main() {
 	fmt.Println("Starting server on port :3002")
 
@@ -1091,6 +1224,8 @@ func main() {
 	http.HandleFunc("/saveSurvey", saveSurvey)
 	http.HandleFunc("/getAllSurveys", getAllSurveys)
 	http.HandleFunc("/deleteSurvey", deleteSurvey)
+	http.HandleFunc("/getSurveyQuestions", getSurvey)
+	http.HandleFunc("/checkResponse", checkResponse)
 
 	err := http.ListenAndServe(":3002", nil)
 	if err != nil {
