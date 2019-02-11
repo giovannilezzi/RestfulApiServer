@@ -95,6 +95,12 @@ type UpdatePost struct {
 	Corpo  string
 }
 
+type Commento struct {
+	Proprietario string
+	Commento     string
+	Idblog       int
+}
+
 type UpdateEventCalendar struct {
 	Id        int
 	TypeEevnt string
@@ -327,6 +333,53 @@ func editPost(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, b)
 	}
 	defer update.Close()
+	resp := Response{Response: "ok"}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(resp)
+	fmt.Println(b)
+	fmt.Fprint(w, b)
+}
+
+func addComment(w http.ResponseWriter, r *http.Request) {
+
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	var com Commento
+
+	err1 := json.NewDecoder(r.Body).Decode(&com)
+	if r.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	if err1 != nil {
+		fmt.Print("Sono Qui")
+		panic(err1)
+	}
+	fmt.Println("U", com.Proprietario, com.Commento, com.Idblog)
+
+	insert, err := db.Query("INSERT INTO commenti(proprietario, commento, idblog) VALUES ($1, $2, $3)", com.Proprietario, com.Commento, com.Idblog)
+
+	// if there is an error inserting, handle it
+	if err != nil {
+		panic(err.Error())
+	}
+	// be careful deferring Queries if you are using transactions
+	defer insert.Close()
 	resp := Response{Response: "ok"}
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(resp)
@@ -1220,6 +1273,7 @@ func main() {
 	http.HandleFunc("/deleteFile", deleteFile)
 	http.HandleFunc("/editFile", editFile)
 	http.HandleFunc("/editPost", editPost)
+	http.HandleFunc("/addComment", addComment)
 	http.HandleFunc("/searchFileByChannel", searchFileByChannel)
 	http.HandleFunc("/saveCalendarEvent", saveCalendarEvent)
 	http.HandleFunc("/getAEventsDay", getAEventsDay)
