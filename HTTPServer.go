@@ -468,6 +468,7 @@ func getAllImage(w http.ResponseWriter, r *http.Request) {
 }*/
 
 func getFileById(w http.ResponseWriter, r *http.Request) {
+
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
@@ -559,6 +560,7 @@ func deleteFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func editFile(w http.ResponseWriter, r *http.Request) {
+
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
@@ -604,7 +606,8 @@ func editFile(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, b)
 }
 
-func searchFile(w http.ResponseWriter, r *http.Request) {
+func searchFileByChannel(w http.ResponseWriter, r *http.Request) {
+
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
@@ -658,6 +661,7 @@ func searchFile(w http.ResponseWriter, r *http.Request) {
 
 /*API per il calendario*/
 func saveCalendarEvent(w http.ResponseWriter, r *http.Request) {
+
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
@@ -758,6 +762,7 @@ func getAEventsDay(w http.ResponseWriter, r *http.Request) {
 }
 
 func getAllAEvents(w http.ResponseWriter, r *http.Request) {
+
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
@@ -858,6 +863,7 @@ func deleteEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func editEvent(w http.ResponseWriter, r *http.Request) {
+
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
@@ -1214,7 +1220,7 @@ func main() {
 	http.HandleFunc("/deleteFile", deleteFile)
 	http.HandleFunc("/editFile", editFile)
 	http.HandleFunc("/editPost", editPost)
-	http.HandleFunc("/searchFile", searchFile)
+	http.HandleFunc("/searchFileByChannel", searchFileByChannel)
 	http.HandleFunc("/saveCalendarEvent", saveCalendarEvent)
 	http.HandleFunc("/getAEventsDay", getAEventsDay)
 	http.HandleFunc("/getAllAEvents", getAllAEvents)
