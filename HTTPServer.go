@@ -155,6 +155,12 @@ type Survey struct {
 	Descrizione string
 }
 
+type NewSurvey struct {
+	Titolo        string
+	Descrizione   string
+	VecchioTitolo string
+}
+
 type RispostaEsatta struct {
 	Risposta string
 }
@@ -279,7 +285,7 @@ func savePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Println(u.Titolo, u.Corpo)
-	insert, err := db.Query("INSERT INTO blog(titolo, corpo) VALUES ( $1, $2 ) LIMIT 3", u.Titolo, u.Corpo)
+	insert, err := db.Query("INSERT INTO blog(titolo, corpo) VALUES ( $1, $2 ) ", u.Titolo, u.Corpo)
 
 	// if there is an error inserting, handle it
 	if err != nil {
@@ -1144,6 +1150,53 @@ func deleteSurvey(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, b)
 }
 
+func editSurvey(w http.ResponseWriter, r *http.Request) {
+
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		hostRemoto, portRemoto, userRemoto, passwordRemoto, dbnameRemoto)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	var su NewSurvey
+	if r.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	err1 := json.NewDecoder(r.Body).Decode(&su)
+	if err1 != nil {
+		http.Error(w, err1.Error(), 400)
+		return
+	}
+	fmt.Println(su.Titolo, su.Descrizione, su.VecchioTitolo)
+	update, err := db.Query("UPDATE questionari SET titolo=$1, descrizione=$2 WHERE titolo = $3", su.Titolo, su.Descrizione, su.VecchioTitolo)
+	if err != nil {
+		panic(err.Error())
+		resp := Response{Response: "errore"}
+		b := new(bytes.Buffer)
+		json.NewEncoder(b).Encode(resp)
+		fmt.Println(b)
+		fmt.Fprint(w, b)
+	}
+	defer update.Close()
+	resp := Response{Response: "ok"}
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(resp)
+	fmt.Println(b)
+	fmt.Fprint(w, b)
+}
+
 func getSurvey(w http.ResponseWriter, r *http.Request) {
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
@@ -1284,6 +1337,7 @@ func main() {
 	http.HandleFunc("/saveSurvey", saveSurvey)
 	http.HandleFunc("/getAllSurveys", getAllSurveys)
 	http.HandleFunc("/deleteSurvey", deleteSurvey)
+	http.HandleFunc("/editSurvey", editSurvey)
 	http.HandleFunc("/getSurveyQuestions", getSurvey)
 	http.HandleFunc("/checkResponse", checkResponse)
 
