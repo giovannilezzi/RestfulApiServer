@@ -160,10 +160,6 @@ type NewSurvey struct {
 	VecchioTitolo string
 }
 
-type RispostaEsatta struct {
-	Risposta string
-}
-
 type ResponseArrayDataEventCalendar struct {
 	Response []DataEventCalendar
 }
@@ -1100,7 +1096,6 @@ func getAllSurveys(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(b).Encode(resp)
 	fmt.Println(b)
 	fmt.Fprint(w, b)
-
 }
 
 func deleteSurvey(w http.ResponseWriter, r *http.Request) {
@@ -1197,6 +1192,7 @@ func editSurvey(w http.ResponseWriter, r *http.Request) {
 }
 
 func getSurvey(w http.ResponseWriter, r *http.Request) {
+
 	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
