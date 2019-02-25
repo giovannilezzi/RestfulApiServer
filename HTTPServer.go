@@ -131,8 +131,7 @@ type DataEventCalendar struct {
 
 type Questions struct {
 	Id              int
-	Tipo            string
-	Descrizione     string
+	Domande         string
 	Risposta_a      string
 	Risposta_b      string
 	Risposta_c      string
@@ -998,9 +997,9 @@ func saveQuestions(w http.ResponseWriter, r *http.Request) {
 		fmt.Print("Sono Qui")
 		panic(err1)
 	}
-	fmt.Println("U", qu.Id, qu.Tipo, qu.Descrizione, qu.Risposta_a, qu.Risposta_b, qu.Risposta_c, qu.Risposta_d, qu.Risposta_esatta)
+	fmt.Println("U", qu.Domande, qu.Risposta_a, qu.Risposta_b, qu.Risposta_c, qu.Risposta_d, qu.Risposta_esatta)
 
-	insert, err := db.Query("INSERT INTO domande(tipo, descrizione, risposta_a, risposta_b, risposta_c, risposta_d ,risposta_esatta, titolo ) VALUES ($1, $2,$3,$4,$5,$6,$7, $8)", qu.Tipo, qu.Descrizione, qu.Risposta_a, qu.Risposta_b, qu.Risposta_c, qu.Risposta_d, qu.Risposta_esatta, qu.Titolo)
+	insert, err := db.Query("INSERT INTO domande(domanda, risposta_a, risposta_b, risposta_c, risposta_d ,risposta_esatta, titolo ) VALUES ($1, $2,$3,$4,$5,$6,$7)", qu.Domande, qu.Risposta_a, qu.Risposta_b, qu.Risposta_c, qu.Risposta_d, qu.Risposta_esatta, qu.Titolo)
 
 	// if there is an error inserting, handle it
 	if err != nil {
@@ -1226,7 +1225,7 @@ func getSurvey(w http.ResponseWriter, r *http.Request) {
 		fmt.Print("Sono Qui")
 		panic(err1)
 	}
-	fmt.Println("U", qu.Titolo, qu.Descrizione)
+	fmt.Println("U", qu.Titolo, qu.Domande)
 
 	results, err := db.Query("SELECT * FROM domande WHERE titolo =$1", qu.Titolo)
 
@@ -1235,7 +1234,7 @@ func getSurvey(w http.ResponseWriter, r *http.Request) {
 	for results.Next() {
 		var tag Questions
 
-		err = results.Scan(&tag.Id, &tag.Tipo, &tag.Descrizione, &tag.Risposta_a, &tag.Risposta_b, &tag.Risposta_c, &tag.Risposta_d, &tag.Risposta_esatta, &tag.Titolo)
+		err = results.Scan(&tag.Id, &tag.Domande, &tag.Risposta_a, &tag.Risposta_b, &tag.Risposta_c, &tag.Risposta_d, &tag.Risposta_esatta, &tag.Titolo)
 		questions = append(questions, tag)
 
 	}
